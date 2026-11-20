@@ -1,0 +1,40 @@
+workflows:
+  spendkit:
+    name: SpendKit quality checks and mobile builds
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: 3.50.1
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: false
+      cancel_previous_builds: true
+    scripts:
+      - name: Generate mobile runners
+        script: ./tool/setup-mobile.sh
+      - name: Analyze and test the design system
+        script: |
+          cd packages/spendkit_ui
+          flutter pub get
+          flutter analyze --fatal-infos
+          flutter test
+      - name: Analyze and test the app
+        script: |
+          flutter pub get
+          flutter analyze --fatal-infos
+          flutter test
+      - name: Build Android debug APK
+        script: flutter build apk --debug
+      - name: Build unsigned iOS app
+        script: flutter build ios --debug --no-codesign
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/ios/iphoneos/*.app
+      - "**/test/failures/*.png"

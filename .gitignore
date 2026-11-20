@@ -1,0 +1,14 @@
+.DS_Store
+.dart_tool/
+.flutter-plugins*
+.packages
+build/
+coverage/
+.idea/
+*.iml
+/android/
+/ios/
+/.metadata
+packages/*/pubspec.lock
+**/test/failures/
+__pycache__/
