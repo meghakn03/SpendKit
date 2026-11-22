@@ -12,3 +12,5 @@ coverage/
 packages/*/pubspec.lock
 **/test/failures/
 __pycache__/
+
+/backend/data/

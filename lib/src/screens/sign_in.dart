@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:spendkit_ui/spendkit_ui.dart';
 
+import '../bank_api.dart';
 import '../core.dart';
 import 'screen_body.dart';
 
@@ -21,6 +22,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void dispose() {
     _code.dispose();
     super.dispose();
+  }
+
+  Future<void> _authenticate(
+    Future<bool> Function() action,
+    String rejectedMessage,
+  ) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    String? error;
+    try {
+      if (!await action()) error = rejectedMessage;
+    } on BankApiException catch (failure) {
+      error = failure.message;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = error;
+        });
+      }
+    }
   }
 
   @override
@@ -81,32 +105,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     label: 'Sign in',
                     icon: Icons.arrow_forward,
                     busy: _busy,
-                    onPressed: () {
-                      if (!session.signIn(_code.text.trim())) {
-                        setState(
-                          () => _error = 'That access code is incorrect.',
-                        );
-                      }
-                    },
+                    onPressed: () => _authenticate(
+                      () => session.signIn(_code.text.trim()),
+                      'That access code is incorrect.',
+                    ),
                   ),
-                  if (session.biometricEnabled)
+                  if (session.canUnlock)
                     TextButton(
                       onPressed: _busy
                           ? null
-                          : () async {
-                              setState(() {
-                                _busy = true;
-                                _error = null;
-                              });
-                              final unlocked = await session.unlock();
-                              if (!mounted) return;
-                              setState(() {
-                                _busy = false;
-                                if (!unlocked) {
-                                  _error = 'Biometric unlock was unavailable or cancelled. Enter your access code.';
-                                }
-                              });
-                            },
+                          : () => _authenticate(
+                              session.unlock,
+                              'Biometric unlock was unavailable. Enter your access code.',
+                            ),
                       child: const Text('Unlock with biometrics'),
                     ),
                 ],

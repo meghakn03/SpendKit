@@ -16,7 +16,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [preferencesProvider.overrideWithValue(MemoryPreferences())],
+        overrides: [
+          preferencesProvider.overrideWithValue(MemoryPreferences()),
+          bankApiProvider.overrideWithValue(FakeBankApi()),
+        ],
         child: const SpendKitApp(),
       ),
     );
@@ -38,6 +41,8 @@ void main() {
     await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
     expect(find.text('Enter the correct access code.'), findsOneWidget);
+    await tester.tap(find.text('Freeze card'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), demoCode);
     await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();

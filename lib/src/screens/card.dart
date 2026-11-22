@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:spendkit_ui/spendkit_ui.dart';
 
+import '../bank_api.dart';
 import '../core.dart';
 import 'bank_widgets.dart';
 import 'screen_body.dart';
@@ -40,6 +41,14 @@ class _CardScreenState extends ConsumerState<CardScreen> {
           () => _status = session.frozen ? 'Card frozen.' : 'Card unfrozen.',
         );
       }
+    } on BankApiException catch (failure) {
+      if (mounted) {
+        setState(
+          () => _error = failure.status == 403
+              ? 'Enter the correct access code.'
+              : failure.message,
+        );
+      }
     } on Exception {
       if (mounted) {
         setState(
@@ -54,7 +63,7 @@ class _CardScreenState extends ConsumerState<CardScreen> {
   @override
   Widget build(BuildContext context) {
     final frozen = ref.watch(sessionProvider).frozen;
-    final repo = ref.watch(repositoryProvider);
+    final account = ref.watch(sessionProvider).account;
     return ScreenBody(
       children: [
         const SpendHeading(
@@ -62,8 +71,8 @@ class _CardScreenState extends ConsumerState<CardScreen> {
           subtitle: 'Manage your Studio North virtual card.',
         ),
         CreditCardSummary(
-          available: repo.availablePence,
-          limit: repo.limitPence,
+          available: account.availablePence,
+          limit: account.limitPence,
           frozen: frozen,
         ),
         SpendPanel(
@@ -126,7 +135,7 @@ class _VerifyDialogState extends State<_VerifyDialog> {
         controller: _code,
         obscureText: true,
         validator: (value) =>
-            value?.trim() == demoCode ? null : 'Enter the correct access code.',
+            value?.trim().isNotEmpty == true ? null : 'Enter your access code.',
       ),
     ),
     actions: [

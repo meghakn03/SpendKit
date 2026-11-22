@@ -14,7 +14,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repo = ref.watch(repositoryProvider);
+    final account = ref.watch(sessionProvider).account;
     final items = ref.watch(transactionsProvider);
     return ScreenBody(
       children: [
@@ -23,8 +23,8 @@ class DashboardScreen extends ConsumerWidget {
           subtitle: 'Studio North Ltd · Business credit account',
         ),
         CreditCardSummary(
-          available: repo.availablePence,
-          limit: repo.limitPence,
+          available: account.availablePence,
+          limit: account.limitPence,
           frozen: ref.watch(sessionProvider).frozen,
           onManage: () => context.go('/card'),
         ),
@@ -35,7 +35,7 @@ class DashboardScreen extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SpendingPanel(transactions: transactions, today: repo.today),
+                SpendingPanel(transactions: transactions, today: account.today),
                 const SizedBox(height: 16),
                 SpendPanel(
                   child: Column(

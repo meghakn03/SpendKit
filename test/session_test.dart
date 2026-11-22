@@ -9,11 +9,13 @@ void main() {
   late MemoryPreferences preferences;
   late FakeBiometrics biometrics;
   late SessionController session;
+  late FakeBankApi api;
 
   setUp(() {
     preferences = MemoryPreferences();
     biometrics = FakeBiometrics();
-    session = SessionController(preferences, biometrics);
+    api = FakeBankApi();
+    session = SessionController(preferences, biometrics, api);
   });
 
   tearDown(() => session.dispose());
@@ -23,24 +25,25 @@ void main() {
       await session.changeCard(requestCode: () async => demoCode),
       isFalse,
     );
-    expect(session.signIn('0000'), isFalse);
-    expect(session.signIn(demoCode), isTrue);
+    expect(await session.signIn('0000'), isFalse);
+    expect(await session.signIn(demoCode), isTrue);
     expect(await session.changeCard(requestCode: () async => null), isFalse);
     expect(session.frozen, isFalse);
     expect(await session.changeCard(requestCode: () async => demoCode), isTrue);
     expect(session.frozen, isTrue);
 
-    final restored = SessionController(preferences, biometrics);
+    final restored = SessionController(preferences, biometrics, api);
     addTearDown(restored.dispose);
     await restored.load();
-    expect(restored.frozen, isTrue);
     expect(restored.signedIn, isFalse);
+    await restored.signIn(demoCode);
+    expect(restored.frozen, isTrue);
   });
 
   test(
     'lock invalidates a pending verification and prevents overlap',
     () async {
-      session.signIn(demoCode);
+      await session.signIn(demoCode);
       final code = Completer<String?>();
       final result = session.changeCard(requestCode: () => code.future);
       expect(
@@ -57,7 +60,7 @@ void main() {
   test('biometric unlock requires enrollment and device approval', () async {
     biometrics.approved = true;
     expect(await session.unlock(), isFalse);
-    session.signIn(demoCode);
+    await session.signIn(demoCode);
     expect(await session.setBiometrics(true), isTrue);
     session.lock();
     biometrics.approved = false;

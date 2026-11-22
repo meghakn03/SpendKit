@@ -27,7 +27,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final today = ref.watch(repositoryProvider).today;
+    final today = ref.watch(sessionProvider).account.today;
     return ScreenBody(
       children: [
         const SpendHeading(

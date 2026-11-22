@@ -1,6 +1,6 @@
 # SpendKit
 
-**Tech stack** · Flutter and Dart · Riverpod · GoRouter · Material 3 and `spendkit_ui` · SharedPreferences · `local_auth` · Flutter unit, widget, and golden tests · Codemagic CI
+**Tech stack** · Flutter and Dart · Riverpod · GoRouter · Node.js · SQLite · Material 3 and `spendkit_ui` · SharedPreferences · `local_auth` · Flutter unit, widget, and golden tests · Codemagic CI
 
 A Flutter portfolio project for a fictional UK small-business credit account. Sign in with demo access code **2048** to review credit, filter activity, explore six months of spending, and manage a virtual card.
 
@@ -8,23 +8,22 @@ A Flutter portfolio project for a fictional UK small-business credit account. Si
 
 ## Run locally
 
-Use Flutter **3.50.1**, the version selected by Codemagic. For the browser demo, install Chrome. For mobile, install the appropriate Android SDK or Xcode tooling.
+Install Flutter **3.50.1**, the version selected by Codemagic, and **Node.js 24 LTS**. For the browser demo, install Chrome. For mobile, install the appropriate Android SDK or Xcode tooling.
 
-From the project root, run this command to resolve dependencies and open the app in Chrome. No backend setup is required.
+From the project root, start the local API and open SpendKit in Chrome with one command.
 
 ```sh
 ./tool/start.sh
 ```
 
-Generate the Android and iOS runners before running on a phone or simulator. The setup script applies Android biometric activity and theme configuration and the iOS Face ID usage description.
+To run the native Android app, start your emulator and pass its device ID to the same script. The script generates and configures the Android runner and starts the API on your Mac. The emulator reaches it through `10.0.2.2`.
 
 ```sh
-./tool/setup-mobile.sh
-flutter devices
-flutter run -d <device-id>
+flutter emulators --launch SpendKit_Pixel
+./tool/start.sh emulator-5554
 ```
 
-Enable **Biometric unlock** in Settings on a mobile device with enrolled biometrics. Use **Lock workspace** to try unlocking. The browser uses the demo access code. Both freezing and unfreezing require verification, with the access code available if biometric verification is cancelled or unavailable.
+Enable **Biometric unlock** in Settings on a supported mobile device. It can reopen a locked session while its server token is still in memory and valid. Sign in with **2048** again after restarting the app. Card changes require the access code, which the API checks independently.
 
 ## Architecture
 
@@ -32,26 +31,31 @@ Enable **Biometric unlock** in Settings on a mobile device with enrolled biometr
 flowchart TD
     Screens["Flutter screens and component gallery"]
     UI["spendkit_ui<br/>Theme, tokens and widgets"]
-    Router["GoRouter<br/>Session guard and tab navigation"]
-    Core["Riverpod app core<br/>Session and protected card actions"]
-    Repository["Mock bank repository<br/>Six months of transaction fixtures"]
-    Storage["SharedPreferencesAsync<br/>Card status and preferences"]
-    Biometrics["local_auth<br/>Mobile biometric prompts"]
+    Core["Riverpod and GoRouter<br/>App session and routing"]
+    API["Node.js HTTP API<br/>Sign-in, account, activity and card controls"]
+    Database["SQLite<br/>Credit and card status"]
+    Fixtures["Synthetic transaction fixtures"]
+    Preferences["SharedPreferences<br/>Accessibility and biometric preferences"]
     Screens --> UI
-    Router --> Screens
-    Router --> Core
     Screens --> Core
-    Screens --> Repository
-    Core --> Storage
-    Core --> Biometrics
+    Core --> API
+    Core --> Preferences
+    API --> Database
+    API --> Fixtures
 ```
 
-- **App core** owns session state and protected operations. Locking invalidates a pending verification. A card update checks the current session before writing, prevents overlapping writes, and changes the visible status after persistence succeeds.
-- **Mock data** uses integer pence and a clock that tests can control. Balances and transactions are fixtures. Date filters include both endpoints, and analytics group spending by month and year.
-- **Design system** is a local package with Flutter and the standalone Material UI package as its runtime dependencies. Screens share typography, spacing, theme, fields, panels, notices, and primary buttons. Open **Settings → Component gallery** to inspect the package in the active theme.
-- **Accessibility** includes semantic headings, live status messages, labelled loading indicators, tooltip-labelled controls, layouts that respect system text scaling, and a persistent high-contrast preference.
+The API listens on loopback at port 8787. Run `node backend/server.mjs` to start it independently. SQLite creates `backend/data/spendkit.sqlite` automatically. The database holds a single fictional account and its card state. Transactions are generated from six months of fixtures. Flutter filters that list and calculates monthly totals in integer pence.
 
-The sign-in code is public and the session is in memory. Local storage holds demo settings and card status. A production deployment would require server-side identity verification and card-control enforcement.
+| Method | Route | What it does |
+| --- | --- | --- |
+| GET | `/health` | Check API readiness |
+| POST | `/session` | Exchange the demo code for a one-hour bearer token and account snapshot |
+| GET | `/account` | Read the signed-in account snapshot |
+| GET | `/transactions` | Read the signed-in account’s fictional transactions |
+| PUT | `/card` | Apply an explicit frozen state after validating the session and access code |
+| DELETE | `/session` | Revoke a bearer token |
+
+Tokens are held in memory by the app and server. The card state survives server restarts. The demo uses a public code, one account, local HTTP and no real banking integration. A deployment with real data would require authenticated users, TLS and per-account authorisation.
 
 ## Consume the UI kit
 
@@ -81,12 +85,13 @@ Widget example(VoidCallback onContinue) => MaterialApp(
 ## Tests and builds
 
 ```sh
+node --test backend/server.test.mjs
 flutter analyze
 flutter test
 (cd packages/spendkit_ui && flutter pub get && flutter analyze && flutter test)
 ```
 
-App tests cover date and merchant filtering, monthly aggregation, session transitions, persistence, and the sign-in-to-freeze flow. UI kit tests cover busy buttons, 200% text scaling, and light and dark golden images for shared panel and button geometry and colour. The fixture excludes text so the golden images are independent of installed fonts. Update the baselines after an intentional visual change.
+App tests cover date and merchant filtering, monthly aggregation, session transitions, persistence, and the sign-in-to-freeze flow with a fake API. UI kit tests cover busy buttons, 200% text scaling, and light and dark golden images for shared panel and button geometry and colour. The fixture excludes text so the golden images are independent of installed fonts. Update the baselines after an intentional visual change.
 
 ```sh
 cd packages/spendkit_ui
@@ -95,4 +100,4 @@ flutter test --update-goldens
 
 [Codemagic configuration](codemagic.yaml) generates runners, analyzes and tests both packages, and builds an Android debug APK and an unsigned iOS app. Connect the GitHub repository in Codemagic to run the SpendKit workflow on pushes to main and pull requests targeting main. [Codemagic Flutter build documentation](https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/)
 
-See the [two-minute recording script](docs/demo.md) for the portfolio walkthrough.
+The recorded walkthrough shows the original local-storage version. The current backend keeps card status in SQLite. See the [two-minute recording script](docs/demo.md) for the portfolio walkthrough.

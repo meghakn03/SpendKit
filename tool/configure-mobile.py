@@ -12,7 +12,22 @@ if "android.permission.USE_BIOMETRIC" not in source:
         '<uses-permission android:name="android.permission.USE_BIOMETRIC" />\n    <application',
         1,
     )
+if "android.permission.INTERNET" not in source:
+    source = source.replace(
+        "<application",
+        '<uses-permission android:name="android.permission.INTERNET" />\n    <application',
+        1,
+    )
 manifest.write_text(source)
+
+debug_manifest = Path("android/app/src/debug/AndroidManifest.xml")
+source = debug_manifest.read_text()
+if "usesCleartextTraffic" not in source:
+    source = source.replace(
+        "</manifest>",
+        '    <application android:usesCleartextTraffic="true" />\n</manifest>',
+    )
+debug_manifest.write_text(source)
 
 for styles in Path("android/app/src/main/res").glob("values*/styles.xml"):
     source = styles.read_text()
@@ -23,6 +38,7 @@ for styles in Path("android/app/src/main/res").glob("values*/styles.xml"):
 info = Path("ios/Runner/Info.plist")
 with info.open("rb") as stream:
     settings = plistlib.load(stream)
+settings.setdefault("NSAppTransportSecurity", {})["NSAllowsLocalNetworking"] = True
 settings["CFBundleDisplayName"] = "SpendKit"
 settings["NSFaceIDUsageDescription"] = "Use Face ID to unlock SpendKit and verify card changes."
 with info.open("wb") as stream:
