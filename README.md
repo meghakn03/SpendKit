@@ -25,6 +25,12 @@ flutter emulators --launch SpendKit_Pixel
 
 Enable **Biometric unlock** in Settings on a supported mobile device. It can reopen a locked session while its server token is still in memory and valid. Sign in with **2048** again after restarting the app. Card changes require the access code, which the API checks independently.
 
+## Demo the card simulator
+
+From Home, select **Open simulator**. Run a purchase above the displayed per-transaction limit to see the decline reason. Then try a smaller purchase. From **Card → Edit spending controls**, block ATM withdrawals and verify with **2048**. Run the same amount as an ATM withdrawal and compare the outcome. Freezing the card takes precedence over the other rules. The simulator reads the card settings from the backend and leaves balances and transaction history untouched.
+
+The dashboard includes a six-month spending chart. Select a bar to see the category breakdown for that month.
+
 ## Architecture
 
 ```mermaid
@@ -54,6 +60,7 @@ The API listens on loopback at port 8787. Run `node backend/server.mjs` to start
 | GET | `/transactions` | Read the signed-in account’s fictional transactions |
 | PUT | `/card` | Apply an explicit frozen state after validating the session and access code |
 | PUT | `/card/controls` | Save a per-transaction limit in pence and an ATM withdrawal setting after re-verifying the access code |
+| POST | `/card/simulations` | Evaluate a fictional purchase or ATM withdrawal against the saved card policy |
 | DELETE | `/session` | Revoke a bearer token |
 
 Tokens are held in memory by the app and server. The card state survives server restarts. The demo uses a public code, one account, local HTTP and fictional card policy settings. It does not process or authorise transactions. A deployment with real data would require authenticated users, TLS and per-account authorisation.

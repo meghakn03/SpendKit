@@ -39,7 +39,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/card', builder: (_, _) => const CardScreen()),
+              GoRoute(
+                path: '/card',
+                builder: (_, _) => const CardScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'simulator',
+                    builder: (_, _) => const CardSimulatorScreen(),
+                  ),
+                ],
+              ),
             ],
           ),
           StatefulShellBranch(

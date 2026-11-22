@@ -49,6 +49,12 @@ test('API protects financial data and preserves confirmed card state on restart'
     const rows = await (await call(base, '/transactions', { token })).json();
     assert.equal(rows.length, 48);
     assert.ok(rows.every(({ pence }) => Number.isInteger(pence)));
+    const simulate = (pence, channel = 'purchase') => call(base, '/card/simulations', {
+      method: 'POST', token, body: { pence, channel },
+    });
+    assert.equal((await simulate(0)).status, 400);
+    assert.equal((await (await simulate(50000)).json()).reason, 'approved');
+    assert.equal((await (await simulate(50001)).json()).reason, 'overLimit');
     const freeze = (code) => call(base, '/card', { method: 'PUT', token, body: { code, frozen: true } });
     assert.equal((await freeze('0000')).status, 403);
     assert.equal((await (await call(base, '/account', { token })).json()).frozen, false);
@@ -63,6 +69,12 @@ test('API protects financial data and preserves confirmed card state on restart'
     assert.equal(updated.transactionLimitPence, 25099);
     assert.equal(updated.atmBlocked, true);
     assert.equal(updated.frozen, true);
+    assert.equal((await (await simulate(100, 'atm')).json()).reason, 'cardFrozen');
+    await call(base, '/card', { method: 'PUT', token, body: { code: '2048', frozen: false } });
+    assert.equal((await (await simulate(100, 'atm')).json()).reason, 'atmBlocked');
+    assert.equal((await (await simulate(100)).json()).reason, 'approved');
+    assert.equal((await (await call(base, '/account', { token })).json()).availablePence, 842560);
+    await freeze('2048');
     assert.equal((await call(base, '/session', { method: 'DELETE', token })).status, 204);
     assert.equal((await call(base, '/account', { token })).status, 401);
 

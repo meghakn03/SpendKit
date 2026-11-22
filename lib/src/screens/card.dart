@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:spendkit_ui/spendkit_ui.dart';
 
@@ -145,6 +146,11 @@ class _CardScreenState extends ConsumerState<CardScreen> {
                 icon: Icons.tune,
                 onPressed: _busy ? null : _editControls,
               ),
+              TextButton.icon(
+                onPressed: () => context.go('/card/simulator'),
+                icon: const Icon(Icons.science_outlined),
+                label: const Text('Test card controls'),
+              ),
             ],
           ),
         ),
@@ -217,14 +223,6 @@ class _CardControlsDialogState extends State<_CardControlsDialog> {
   );
   late bool _atmBlocked = widget.account.atmBlocked;
 
-  int? _parsePence(String? value) {
-    final match = RegExp(r'^(\d{1,8})(?:\.(\d{1,2}))?$')
-        .firstMatch(value?.trim() ?? '');
-    if (match == null) return null;
-    return int.parse(match[1]!) * 100 +
-        int.parse((match[2] ?? '').padRight(2, '0'));
-  }
-
   @override
   void dispose() {
     _limit.dispose();
@@ -249,7 +247,7 @@ class _CardControlsDialogState extends State<_CardControlsDialog> {
               errorMaxLines: 2,
             ),
             validator: (value) {
-              final pence = _parsePence(value);
+              final pence = parsePounds(value);
               if (pence == null ||
                   pence < 1 ||
                   pence > widget.account.limitPence) {
@@ -278,7 +276,7 @@ class _CardControlsDialogState extends State<_CardControlsDialog> {
         onPressed: () {
           if (_form.currentState!.validate()) {
             Navigator.pop(context, (
-              transactionLimitPence: _parsePence(_limit.text)!,
+              transactionLimitPence: parsePounds(_limit.text)!,
               atmBlocked: _atmBlocked,
             ));
           }

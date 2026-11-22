@@ -28,6 +28,36 @@ class DashboardScreen extends ConsumerWidget {
           frozen: ref.watch(sessionProvider).frozen,
           onManage: () => context.go('/card'),
         ),
+        SpendPanel(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.science_outlined, size: 28),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Test a card payment',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'See how your card settings affect a purchase or ATM withdrawal.',
+                    ),
+                    const SizedBox(height: 10),
+                    SpendButton(
+                      label: 'Open simulator',
+                      icon: Icons.arrow_forward,
+                      onPressed: () => context.go('/card/simulator'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         TransactionData(
           items: items,
           onRetry: () => ref.invalidate(transactionsProvider),

@@ -20,10 +20,11 @@ class CreditCardSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [SpendColors.ink, Color(0xFF28664F)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+      gradient: const RadialGradient(
+        colors: [Color(0xFF378266), Color(0xFF163D31), Color(0xFF102B23)],
+        stops: [0, 0.60, 1],
+        center: Alignment(0.95, -1.1),
+        radius: 1.65,
       ),
       borderRadius: BorderRadius.circular(26),
     ),

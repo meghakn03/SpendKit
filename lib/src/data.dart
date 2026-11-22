@@ -26,6 +26,14 @@ String pounds(int pence) {
   return '${pence < 0 ? '−' : ''}£$grouped.$pennies';
 }
 
+int? parsePounds(String? value) {
+  final match = RegExp(r'^(\d{1,8})(?:\.(\d{1,2}))?$')
+      .firstMatch(value?.trim() ?? '');
+  if (match == null) return null;
+  return int.parse(match[1]!) * 100 +
+      int.parse((match[2] ?? '').padRight(2, '0'));
+}
+
 const monthNames = [
   'January',
   'February',

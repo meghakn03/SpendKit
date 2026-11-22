@@ -86,6 +86,14 @@ class FakeBankApi implements BankApi {
   }
 
   @override
+  Future<CardSimulation> simulate(
+    String token,
+    int pence,
+    SimulationChannel channel,
+  ) async =>
+      (reason: SimulationReason.cardFrozen, account: await account(token));
+
+  @override
   Future<void> revoke(String token) async {
     _tokens.remove(token);
   }

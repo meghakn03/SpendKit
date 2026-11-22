@@ -33,6 +33,21 @@ class BankAccount {
   final DateTime today;
 }
 
+enum SimulationChannel { purchase, atm }
+
+enum SimulationReason {
+  approved('The amount is within the card limit and available credit.'),
+  cardFrozen('The virtual card is frozen.'),
+  atmBlocked('ATM withdrawals are blocked for this card.'),
+  overLimit('The amount is above the per-transaction limit.'),
+  insufficientCredit('The amount is above the available credit.');
+
+  const SimulationReason(this.explanation);
+  final String explanation;
+}
+
+typedef CardSimulation = ({SimulationReason reason, BankAccount account});
+
 typedef CardControls = ({int transactionLimitPence, bool atmBlocked});
 
 typedef BankSession = ({String token, BankAccount account});
@@ -56,6 +71,11 @@ abstract interface class BankApi {
     String token,
     String code,
     CardControls controls,
+  );
+  Future<CardSimulation> simulate(
+    String token,
+    int pence,
+    SimulationChannel channel,
   );
   Future<void> revoke(String token);
 }
@@ -176,6 +196,24 @@ class HttpBankApi implements BankApi {
       },
     ) as Map<String, dynamic>,
   );
+
+  @override
+  Future<CardSimulation> simulate(
+    String token,
+    int pence,
+    SimulationChannel channel,
+  ) async {
+    final json = await _request(
+      'POST',
+      'card/simulations',
+      token: token,
+      body: {'pence': pence, 'channel': channel.name},
+    ) as Map<String, dynamic>;
+    return (
+      reason: SimulationReason.values.byName(json['reason'] as String),
+      account: BankAccount.fromJson(json['account'] as Map<String, dynamic>),
+    );
+  }
 
   @override
   Future<void> revoke(String token) async {

@@ -64,6 +64,23 @@ void main() {
     expect(find.text('Per-transaction limit · £250.99'), findsOneWidget);
     expect(find.text('ATM withdrawals · Blocked'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Test card controls').hitTestable(),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Test card controls'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Run simulation').hitTestable(),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Run simulation'));
+    await tester.pumpAndSettle();
+    expect(find.text('Declined'), findsOneWidget);
+    expect(find.text('The virtual card is frozen.'), findsOneWidget);
+
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Lock workspace'));

@@ -142,6 +142,22 @@ const server = createServer(async (request, response) => {
       response.writeHead(204);
       return response.end();
     }
+    if (route === 'POST /card/simulations') {
+      const body = await readJson(request);
+      if (!isSignedIn()) return send(response, 401, { error: 'Sign in to continue.' });
+      const { pence, channel } = body ?? {};
+      if (!Number.isSafeInteger(pence) || pence < 1 ||
+          !['purchase', 'atm'].includes(channel)) {
+        return send(response, 400, { error: 'Provide an amount in pence and a valid channel.' });
+      }
+      const card = account(today);
+      let reason = 'approved';
+      if (card.frozen) reason = 'cardFrozen';
+      else if (channel === 'atm' && card.atmBlocked) reason = 'atmBlocked';
+      else if (pence > card.transactionLimitPence) reason = 'overLimit';
+      else if (pence > card.availablePence) reason = 'insufficientCredit';
+      return send(response, 200, { reason, account: card });
+    }
     if (route === 'PUT /card' || route === 'PUT /card/controls') {
       const body = await readJson(request);
       if (!isSignedIn()) return send(response, 401, { error: 'Sign in to continue.' });
