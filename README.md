@@ -6,6 +6,10 @@ A Flutter portfolio project for a fictional UK small-business credit account. Si
 
 [Watch the two-minute SpendKit walkthrough](docs/spendkit-demo.mp4) · [Dashboard screenshot](docs/dashboard.png)
 
+## Native SwiftUI version
+
+The [SwiftUI client](swift-native/README.md) uses the same SpendKit API and SQLite card state. Open its Xcode project for iPhone or use Swift Package Manager to preview it on macOS.
+
 ## Run locally
 
 Install Flutter **3.50.1**, the version selected by Codemagic, and **Node.js 24 LTS**. For the browser demo, install Chrome. For mobile, install the appropriate Android SDK or Xcode tooling.

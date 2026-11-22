@@ -14,3 +14,7 @@ packages/*/pubspec.lock
 __pycache__/
 
 /backend/data/
+
+/swift-native/.build/
+/swift-native/.swiftpm/
+**/xcuserdata/
