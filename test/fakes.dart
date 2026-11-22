@@ -72,7 +72,11 @@ class FakeBankApi implements BankApi {
   }
 
   @override
-  Future<BankAccount> setCardControls(String token, String code, CardControls controls) async {
+  Future<BankAccount> setCardControls(
+    String token,
+    String code,
+    CardControls controls,
+  ) async {
     await account(token);
     if (code != demoCode) {
       throw const BankApiException('Invalid code', status: 403);

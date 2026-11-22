@@ -2,7 +2,7 @@
 
 **Tech stack** · Flutter and Dart · Riverpod · GoRouter · Node.js · SQLite · Material 3 and `spendkit_ui` · SharedPreferences · `local_auth` · Flutter unit, widget, and golden tests · Codemagic CI
 
-A Flutter portfolio project for a fictional UK small-business credit account. Sign in with demo access code **2048** to review credit, filter activity, explore six months of spending, and manage a virtual card.
+A Flutter portfolio project for a fictional UK small-business credit account. Sign in with demo access code **2048** to review credit, filter activity, explore six months of spending, and manage a virtual card. In the Card tab you can freeze the card, set a per-transaction limit and block ATM withdrawals.
 
 [Watch the two-minute SpendKit walkthrough](docs/spendkit-demo.mp4) · [Dashboard screenshot](docs/dashboard.png)
 
@@ -44,7 +44,7 @@ flowchart TD
     API --> Fixtures
 ```
 
-The API listens on loopback at port 8787. Run `node backend/server.mjs` to start it independently. SQLite creates `backend/data/spendkit.sqlite` automatically. The database holds a single fictional account and its card state. Transactions are generated from six months of fixtures. Flutter filters that list and calculates monthly totals in integer pence.
+The API listens on loopback at port 8787. Run `node backend/server.mjs` to start it independently. SQLite creates `backend/data/spendkit.sqlite` automatically. The database holds a single fictional account and its card state and spending controls. Transactions are generated from six months of fixtures. Flutter filters that list and calculates monthly totals in integer pence.
 
 | Method | Route | What it does |
 | --- | --- | --- |
@@ -53,9 +53,10 @@ The API listens on loopback at port 8787. Run `node backend/server.mjs` to start
 | GET | `/account` | Read the signed-in account snapshot |
 | GET | `/transactions` | Read the signed-in account’s fictional transactions |
 | PUT | `/card` | Apply an explicit frozen state after validating the session and access code |
+| PUT | `/card/controls` | Save a per-transaction limit in pence and an ATM withdrawal setting after re-verifying the access code |
 | DELETE | `/session` | Revoke a bearer token |
 
-Tokens are held in memory by the app and server. The card state survives server restarts. The demo uses a public code, one account, local HTTP and no real banking integration. A deployment with real data would require authenticated users, TLS and per-account authorisation.
+Tokens are held in memory by the app and server. The card state survives server restarts. The demo uses a public code, one account, local HTTP and fictional card policy settings. It does not process or authorise transactions. A deployment with real data would require authenticated users, TLS and per-account authorisation.
 
 ## Consume the UI kit
 

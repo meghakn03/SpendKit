@@ -52,7 +52,11 @@ abstract interface class BankApi {
     String code, {
     required bool frozen,
   });
-  Future<BankAccount> setCardControls(String token, String code, CardControls controls);
+  Future<BankAccount> setCardControls(
+    String token,
+    String code,
+    CardControls controls,
+  );
   Future<void> revoke(String token);
 }
 
@@ -156,17 +160,22 @@ class HttpBankApi implements BankApi {
   );
 
   @override
-  Future<BankAccount> setCardControls(String token, String code, CardControls controls) async =>
-      BankAccount.fromJson(await _request(
-        'PUT',
-        'card/controls',
-        token: token,
-        body: {
-          'code': code,
-          'transactionLimitPence': controls.transactionLimitPence,
-          'atmBlocked': controls.atmBlocked,
-        },
-      ) as Map<String, dynamic>);
+  Future<BankAccount> setCardControls(
+    String token,
+    String code,
+    CardControls controls,
+  ) async => BankAccount.fromJson(
+    await _request(
+      'PUT',
+      'card/controls',
+      token: token,
+      body: {
+        'code': code,
+        'transactionLimitPence': controls.transactionLimitPence,
+        'atmBlocked': controls.atmBlocked,
+      },
+    ) as Map<String, dynamic>,
+  );
 
   @override
   Future<void> revoke(String token) async {

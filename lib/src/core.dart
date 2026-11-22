@@ -199,17 +199,21 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> changeCard({
-    required Future<String?> Function() requestCode,
-  }) {
+  Future<bool> changeCard({required Future<String?> Function() requestCode}) {
     final next = !frozen;
-    return _changeCard(requestCode, (token, code) => _api.setCard(token, code, frozen: next));
+    return _changeCard(
+      requestCode,
+      (token, code) => _api.setCard(token, code, frozen: next),
+    );
   }
 
   Future<bool> changeCardControls(
     CardControls controls, {
     required Future<String?> Function() requestCode,
-  }) => _changeCard(requestCode, (token, code) => _api.setCardControls(token, code, controls));
+  }) => _changeCard(
+    requestCode,
+    (token, code) => _api.setCardControls(token, code, controls),
+  );
 
   Future<bool> _changeCard(
     Future<String?> Function() requestCode,

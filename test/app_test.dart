@@ -7,9 +7,7 @@ import 'package:spendkit/src/core.dart';
 import 'fakes.dart';
 
 void main() {
-  testWidgets('sign in, verify a freeze and lock the workspace', (
-    tester,
-  ) async {
+  testWidgets('verify card changes and lock the workspace', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(430, 860);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -47,6 +45,24 @@ void main() {
     await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
     expect(find.text('Unfreeze card'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Edit spending controls').hitTestable(),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit spending controls'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), '250.99');
+    await tester.tap(find.text('Block ATM withdrawals'));
+    await tester.tap(find.text('Continue to verification'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), demoCode);
+    await tester.tap(find.text('Confirm'));
+    await tester.pumpAndSettle();
+    expect(find.text('Per-transaction limit · £250.99'), findsOneWidget);
+    expect(find.text('ATM withdrawals · Blocked'), findsOneWidget);
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();

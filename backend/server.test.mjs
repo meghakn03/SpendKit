@@ -54,12 +54,24 @@ test('API protects financial data and preserves confirmed card state on restart'
     assert.equal((await (await call(base, '/account', { token })).json()).frozen, false);
     assert.equal((await (await freeze('2048')).json()).frozen, true);
     assert.equal((await (await freeze('2048')).json()).frozen, true);
+    const controls = (code, transactionLimitPence, atmBlocked) => call(base, '/card/controls', {
+      method: 'PUT', token, body: { code, transactionLimitPence, atmBlocked },
+    });
+    assert.equal((await controls('0000', 25099, true)).status, 403);
+    assert.equal((await controls('2048', 1200001, true)).status, 400);
+    const updated = await (await controls('2048', 25099, true)).json();
+    assert.equal(updated.transactionLimitPence, 25099);
+    assert.equal(updated.atmBlocked, true);
+    assert.equal(updated.frozen, true);
     assert.equal((await call(base, '/session', { method: 'DELETE', token })).status, 204);
     assert.equal((await call(base, '/account', { token })).status, 401);
 
     await stop();
     base = await start();
-    assert.equal((await (await signIn()).json()).account.frozen, true);
+    const restored = (await (await signIn()).json()).account;
+    assert.equal(restored.frozen, true);
+    assert.equal(restored.transactionLimitPence, 25099);
+    assert.equal(restored.atmBlocked, true);
   } finally {
     await stop();
     await rm(dir, { recursive: true, force: true });

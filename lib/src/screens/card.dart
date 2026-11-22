@@ -4,6 +4,7 @@ import 'package:spendkit_ui/spendkit_ui.dart';
 
 import '../bank_api.dart';
 import '../core.dart';
+import '../data.dart';
 import 'bank_widgets.dart';
 import 'screen_body.dart';
 
@@ -19,27 +20,48 @@ class _CardScreenState extends ConsumerState<CardScreen> {
   String? _error;
   String? _status;
 
-  Future<void> _changeCard() async {
+  Future<String?> _requestCode() {
+    if (!mounted) return Future<String?>.value();
+    return showDialog<String>(
+      context: context,
+      builder: (_) => const _VerifyDialog(),
+    );
+  }
+
+  Future<void> _changeCard() {
     final session = ref.read(sessionProvider);
+    return _saveCard(
+      () => session.changeCard(requestCode: _requestCode),
+      () => session.frozen ? 'Card frozen.' : 'Card unfrozen.',
+    );
+  }
+
+  Future<void> _editControls() async {
+    final session = ref.read(sessionProvider);
+    final controls = await showDialog<CardControls>(
+      context: context,
+      builder: (_) => _CardControlsDialog(account: session.account),
+    );
+    if (!mounted || controls == null) return;
+    await _saveCard(
+      () => session.changeCardControls(controls, requestCode: _requestCode),
+      () => 'Spending controls saved.',
+    );
+  }
+
+  Future<void> _saveCard(
+    Future<bool> Function() save,
+    String Function() successMessage,
+  ) async {
     setState(() {
       _busy = true;
       _error = null;
       _status = null;
     });
     try {
-      final changed = await session.changeCard(
-        requestCode: () {
-          if (!mounted) return Future<String?>.value();
-          return showDialog<String>(
-            context: context,
-            builder: (_) => const _VerifyDialog(),
-          );
-        },
-      );
+      final changed = await save();
       if (mounted && changed) {
-        setState(
-          () => _status = session.frozen ? 'Card frozen.' : 'Card unfrozen.',
-        );
+        setState(() => _status = successMessage());
       }
     } on BankApiException catch (failure) {
       if (mounted) {
@@ -52,7 +74,7 @@ class _CardScreenState extends ConsumerState<CardScreen> {
     } on Exception {
       if (mounted) {
         setState(
-          () => _error = 'The card status could not be saved. Try again.',
+          () => _error = 'The card changes could not be saved. Try again.',
         );
       }
     } finally {
@@ -102,6 +124,30 @@ class _CardScreenState extends ConsumerState<CardScreen> {
             ],
           ),
         ),
+        SpendPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Spending controls',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Per-transaction limit · ${pounds(account.transactionLimitPence)}',
+              ),
+              Text(
+                'ATM withdrawals · ${account.atmBlocked ? 'Blocked' : 'Allowed'}',
+              ),
+              const SizedBox(height: 16),
+              SpendButton(
+                label: 'Edit spending controls',
+                icon: Icons.tune,
+                onPressed: _busy ? null : _editControls,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -148,6 +194,93 @@ class _VerifyDialogState extends State<_VerifyDialog> {
         onPressed: () {
           if (_form.currentState!.validate()) {
             Navigator.pop(context, _code.text.trim());
+          }
+        },
+      ),
+    ],
+  );
+}
+
+class _CardControlsDialog extends StatefulWidget {
+  const _CardControlsDialog({required this.account});
+
+  final BankAccount account;
+
+  @override
+  State<_CardControlsDialog> createState() => _CardControlsDialogState();
+}
+
+class _CardControlsDialogState extends State<_CardControlsDialog> {
+  final _form = GlobalKey<FormState>();
+  late final _limit = TextEditingController(
+    text: (widget.account.transactionLimitPence / 100).toStringAsFixed(2),
+  );
+  late bool _atmBlocked = widget.account.atmBlocked;
+
+  int? _parsePence(String? value) {
+    final match = RegExp(r'^(\d{1,8})(?:\.(\d{1,2}))?$')
+        .firstMatch(value?.trim() ?? '');
+    if (match == null) return null;
+    return int.parse(match[1]!) * 100 +
+        int.parse((match[2] ?? '').padRight(2, '0'));
+  }
+
+  @override
+  void dispose() {
+    _limit.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    scrollable: true,
+    title: const Text('Edit spending controls'),
+    content: Form(
+      key: _form,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            controller: _limit,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Per-transaction limit',
+              prefixText: '£',
+              errorMaxLines: 2,
+            ),
+            validator: (value) {
+              final pence = _parsePence(value);
+              if (pence == null ||
+                  pence < 1 ||
+                  pence > widget.account.limitPence) {
+                return 'Enter an amount from £0.01 to ${pounds(widget.account.limitPence)}.';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Block ATM withdrawals'),
+            value: _atmBlocked,
+            onChanged: (value) => setState(() => _atmBlocked = value),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      SpendButton(
+        label: 'Continue to verification',
+        onPressed: () {
+          if (_form.currentState!.validate()) {
+            Navigator.pop(context, (
+              transactionLimitPence: _parsePence(_limit.text)!,
+              atmBlocked: _atmBlocked,
+            ));
           }
         },
       ),
